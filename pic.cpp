@@ -17,30 +17,6 @@
 using namespace cv;
 using namespace std;
 
-void showfiles();
-
-void showfiles()
-{
-	string path="\\home\\chuyi\\HPE";
-	Directory dir;
-	vector<string> fileNames = dir.GetListFiles(path,"*.jpg",false);
-	
-	for(int i = 0; i < fileNames.size(); i++)  
-	{  
-		//get image name  
-		string fileName = fileNames[i];  
-		string fileFullName = path + fileName;  
-		cout<<"File name:"<<fileName<<endl;  
-		cout<<"Full path:"<<fileFullName<<endl;  
-	  
-		//load image  
-		IplImage* srcImg = cvLoadImage(fileFullName.c_str(), -1);  
-		cvShowImage("src", srcImg);  
-		cvWaitKey(0);  
-	}  
-}
-
-
 vector<Rect> detectFaces(Mat img_gray){
 	CascadeClassifier faces_cascade;
 	faces_cascade.load("haarcascade_frontalface_alt.xml");
