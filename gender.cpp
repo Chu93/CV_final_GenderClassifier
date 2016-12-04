@@ -149,24 +149,32 @@ int main(int argc, char* argv[])
 	
 	--------------------------------------------------------------*/
 	
-	Mat testSample = images[images.size()-1];
-	int testLabel = labels[labels.size()-1];
-	images.pop_back();
-	labels.pop_back();
+	// Input a test image
+	Mat InImg = imread("att_faces/female/s10/2.pgm",0);
 	
-	int predictLabel = model -> predict(testSample);
+	// Record its size
+	int height = InImg.rows;
+	int width = InImg.cols;
 	
-	string result_message = format("\n\nPredicted GENDER class = %d", predictLabel);
-	cout << result_message << endl;
-	cout<<"Predicted Gender is ";
-	if(predictLabel==1)
+	cout << width<<"x"<<height<<endl;
+	// Resize the test image
+	//Mat testImg;
+	//resize(InImg,testImg,Size(96,112));
+	
+	int prediction = model -> predict(InImg);
+	
+	string result = format("\n\nPredicted Gender: %d", prediction);
+	cout << result << endl;
+	string gender;
+	if(prediction==1)
 	{
-		cout<<"Female"<<endl;
+		gender="Female";
 	}
 	else
 	{
-		cout<<"Male"<<endl;
+		gender="Male";
 	}
+	cout<<"Predicted Gender is "<<gender<<endl;
 	
 	/*-------------------------------------------------------------*/
 
