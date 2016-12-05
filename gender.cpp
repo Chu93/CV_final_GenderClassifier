@@ -13,24 +13,6 @@ using namespace std;
 #define WIDTH 92
 #define HEIGHT 112
 
-static Mat norm_0_255(InputArray _src) {
-    Mat src = _src.getMat();
-    // Create and return normalized image:
-    Mat dst;
-    switch(src.channels()) {
-    case 1:
-        cv::normalize(_src, dst, 0, 255, NORM_MINMAX, CV_8UC1);
-        break;
-    case 3:
-        cv::normalize(_src, dst, 0, 255, NORM_MINMAX, CV_8UC3);
-        break;
-    default:
-        src.copyTo(dst);
-        break;
-    }
-    return dst;
-}
-
 void read_csv(string& fileName,vector<Mat>& images,vector<int>& labels,char separator = ';')
 {
     ifstream file(fileName.c_str(),ifstream::in);    //Open the file
@@ -238,7 +220,9 @@ int main(int argc, char* argv[])
 	--------------------------------------------------------------*/
 	
 	Mat testImg;
-	testImg = imread("att_faces/male/s4/1.pgm",0);
+	string testFile = argv[2];
+	testImg = imread(testFile,0);
+	//testImg = imread("att_faces/male/s4/1.pgm",0);
 	
 	int predictLabel = model -> predict(testImg);
 	

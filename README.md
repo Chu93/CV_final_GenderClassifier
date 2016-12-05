@@ -5,13 +5,16 @@ compile gender.cpp with following command:
        g++ gender.cpp -o gender `pkg-config --cflags --libs opencv`
        
 To run:
+       
+       ./gender <csv file path> <test image path>
+       
+for example:
 
-       ./gender att_faces/att.csv
+       ./gender att_faces/att.csv att_faces/female/s8/4.pgm
 
-I failed to use a .jpg image from another dataset as test image.
-And, the accuracy is awful, I wanna add more female samples to train the classifier.
+Theoratically, this program can resize training samples automatically and apply different .csv files and test images(just call them with correct path in command).
 
-I wanted to use CAS-PEAL(Though with a drawback: it contains only Asian people's faces) to train it but it always give me some error like:
+But when I wanted to use CAS-PEAL(Though with a drawback: it contains only Asian people's faces) to train it, it always give me some error like:
 
 The matrix is not continuous, thus its number of rows can not be changed in function reshape...
 
