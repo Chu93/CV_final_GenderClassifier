@@ -5,6 +5,10 @@ compile gender.cpp with following command:
        g++ gender.cpp -o gender `pkg-config --cflags --libs opencv`
        
 To run:
+       
+       ./gender <csv file path> <test image path>
+       
+for example:
 
        ./gender att_faces/att.csv att_faces/female/s8/4.pgm
 
