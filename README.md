@@ -6,10 +6,7 @@ compile gender.cpp with following command:
        
 To run:
 
-       ./gender att_faces/att.csv
-
-I failed to use a .jpg image from another dataset as test image.
-And, the accuracy is awful, I wanna add more female samples to train the classifier.
+       ./gender att_faces/att.csv att_faces/female/s8/4.pgm
 
 I wanted to use CAS-PEAL(Though with a drawback: it contains only Asian people's faces) to train it but it always give me some error like:
 
