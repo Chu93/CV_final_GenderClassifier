@@ -238,7 +238,9 @@ int main(int argc, char* argv[])
 	--------------------------------------------------------------*/
 	
 	Mat testImg;
-	testImg = imread("att_faces/male/s4/1.pgm",0);
+	string testFile = argv[2];
+	testImg = imread(testFile,0);
+	//testImg = imread("att_faces/male/s4/1.pgm",0);
 	
 	int predictLabel = model -> predict(testImg);
 	
