@@ -5,4 +5,4 @@ Build the project with the following command:
 <path to qmake.exe> <path to GenderClassifierGUI.pro> -spec win32-msvc2015 "CONFIG+=debug" "CONFIG+=qml_debug"
 
 To run the project:
-execute GenderClassifierGUI.exe from the build directory
+execute GenderClassifierGUI.exe from the debug directory in the build directory
