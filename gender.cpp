@@ -45,18 +45,18 @@ int resizeSamples(string PATH, string Prefix,int START,int END)
 		num<<n;
 		s=num.str();
 			
-		ImgName=PATH+Prefix+s+".bmp";
+		ImgName=PATH+Prefix+s+".pgm";
 		image = imread(ImgName,CV_LOAD_IMAGE_COLOR);
 
 		Mat newImg;
 		if(! image.data )                              // Check for invalid input
 		{
-			cout <<  "Could not open or find face_" << s << ".bmp" << std::endl ;
+			cout <<  "Could not open or find face_" << s << ".pgm" << std::endl ;
 		}
 		else
 		{
-			//namedWindow( "Display window", WINDOW_AUTOSIZE );// Create a window for display.
-			//imshow( "Display window", image );                   // Show our image inside it.
+			//namedWindow( "Display window", WINDOW_AUTOSIZE );		// Create a window for display.
+			//imshow( "Display window", image );	// Show our image inside it.
 			resize(image,newImg,Size(WIDTH,HEIGHT));
 			imwrite(ImgName,newImg);
 			cout << "Resize face_" << s << ".bmp to " << newImg.cols << "x" << newImg.rows << endl;
@@ -68,71 +68,63 @@ int resizeSamples(string PATH, string Prefix,int START,int END)
     return 0;
 }
 
-
-void detection( Mat& img, CascadeClassifier& cascade, CascadeClassifier& nestedCascade, double scale, bool tryflip )
-{	
-	int i = 0;
-
-	vector<Rect> faces, faces2;	    //vector to store faces info
-	Mat gray, smallImg( cvRound (img.rows/scale), cvRound(img.cols/scale), CV_8UC1 );
+// To enhance accuracy, I add faces2 for re-checking the detected faces
+// Successfully prevent the face detector from misrecognizing hands and clocks as faces
+vector<Rect> detectFaces(Mat img_gray, bool tryflip){
+	CascadeClassifier faces_cascade;
+	faces_cascade.load("haarcascade_frontalface_alt.xml");
 	
-	//Haar Classifier is trained with gray scale image, turn img into gray scale
-	cvtColor( img, gray, CV_BGR2GRAY );
-
-	//enhance images brightness and contrast
-	resize( gray, smallImg, smallImg.size(), 0, 0, INTER_LINEAR );
-	equalizeHist( smallImg, smallImg );	
-
-	cascade.detectMultiScale( smallImg, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE,Size(30, 30));
-		
-    //detect again to enhance accurancy
-    if( tryflip )
-    {
-        flip(smallImg, smallImg, 1);
-		cascade.detectMultiScale( smallImg, faces, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE,Size(30, 30));
-
-        for( vector<Rect>::const_iterator r = faces2.begin(); r != faces2.end(); r++ )
-        {
-            faces.push_back(Rect(smallImg.cols - r->x - r->width, r->y, r->width, r->height));
-        }
-    }
-
- 
-    for( vector<Rect>::const_iterator r = faces.begin(); r != faces.end(); r++ )
-    {
-        Mat smallImgROI;
-        vector<Rect> nestedObjects;
-        Point center;
-		Scalar color = CV_RGB(0,0,255);
-        int radius;
-
-        double aspect_ratio = (double)r->width/r->height;
-        if( 0.75 < aspect_ratio && aspect_ratio < 1.3 )
-        {
-            //resize image
-            center.x = cvRound((r->x + r->width*0.5)*scale);
-            center.y = cvRound((r->y + r->height*0.5)*scale);
-            radius = cvRound((r->width + r->height)*0.25*scale);
-            circle( img, center, radius, color, 3, 8, 0 );
-        }
-        else
-            rectangle( img, cvPoint(cvRound(r->x*scale), cvRound(r->y*scale)),
-                       cvPoint(cvRound((r->x + r->width-1)*scale), cvRound((r->y + r->height-1)*scale)),
-                       color, 3, 8, 0);
-        if( nestedCascade.empty() )
-            continue;
-        smallImgROI = smallImg(*r);
-    }
-
+	vector<Rect> faces,faces2;
+	faces_cascade.detectMultiScale(img_gray,faces,1.1, 2, 0|CV_HAAR_SCALE_IMAGE, Size(30, 30));
+	
+	// Detect again to enhance accuracy
+	if (tryflip)
+	{
+		flip(img_gray,img_gray,1);	// Flip it then detect again
+		faces_cascade.detectMultiScale(img_gray,faces,1.1, 2, 0|CV_HAAR_SCALE_IMAGE, Size(30, 30));
+		for(vector<Rect>::const_iterator r = faces2.begin(); r != faces2.end(); r++)
+		{
+            faces.push_back(Rect(img_gray.cols - r->x - r->width, r->y, r->width, r->height));
+		}
+	}
+	
+	return faces;
 }
 
 
-int main(int argc, char* argv[])
-{
-	// Prepare a Haar face classifier
-	CascadeClassifier haarface,nest;
-	haarface.load("haarcascade_frontalface_alt.xml");
+void drawFaces(Mat img,vector<Rect> faces){
+	namedWindow("faces");
+	for(size_t i=0;i<faces.size();i++){
+		
+		// To draw a ellipse, which looks better as a face detector
+		//Point center(faces[i].x + faces[i].width/2,faces[i].y + faces[i].height/2);
+		//ellipse(img,center,Size(faces[i].width/2,faces[i].height/1.5),0,0,360,Scalar(0,255,0),2,8,0);
+		
+		// To draw a rectangle, which is more suitable for our purpose
+		Point pt1(faces[i].x, faces[i].y);
+		Point pt2(faces[i].x + faces[i].width, faces[i].y + faces[i].height);
+		rectangle(img,pt1,pt2,Scalar(0,0,255),1,8,0);
+		
+		//putText(img,"TEST FONT",pt1,CV_FONT_HERSHEY_TRIPLEX, 0.7f ,Scalar(0,255,0),1.5,8,0);
+	}
+	imshow("faces",img);
+}
+
 	
+void saveFaces(Mat img,Mat img_gray){
+	vector<Rect> faces = detectFaces(img_gray,1);
+	for(size_t i=0; i<faces.size();i++){
+		stringstream buffer;
+		buffer<<i;
+		string saveName = "face_"+ buffer.str() + ".jpg";
+		Rect roi = faces[i];
+		imwrite(saveName,img(roi));
+	}
+}
+	
+
+int main(int argc, char* argv[])
+{	
     //string csvPath = "CAS-PEAL/at.txt";
 	//string csvPath = "att_faces/att.csv";
 	string csvPath = argv[1];
@@ -154,8 +146,7 @@ int main(int argc, char* argv[])
         CV_Error(CV_StsError, error_message);
     }
 
-    cout << "Images: " << images.size() << endl;
-    cout << "Labels: " << labels.size() << endl;
+    cout << "Got " << images.size() << " sample images." << endl;
 	
 	/*------------------------------------------------------------
 	
@@ -186,13 +177,7 @@ int main(int argc, char* argv[])
 	
 	Training with FaceRecognizer class of OpenCV:
 	
-	--------------------------------------------------------------*/		
-	Mat testSample = images[images.size()-1];
-	int testLabel = labels[labels.size()-1];
-	images.pop_back();
-	labels.pop_back();	
-	//height info of images
-	//int height = images[0].rows;
+	--------------------------------------------------------------	*/	
 
     // LBPHFaceRecognizer
 	// Need gray scale images
@@ -215,14 +200,21 @@ int main(int argc, char* argv[])
 	
 	/*------------------------------------------------------------
 	
-	Detection Part:
+	Detection Part: a face image
 	
-	--------------------------------------------------------------*/
+	-------------------------------------------------------------*/
 	
 	Mat testImg;
 	string testFile = argv[2];
 	testImg = imread(testFile,0);
 	//testImg = imread("att_faces/male/s4/1.pgm",0);
+	
+	if((testImg.rows != HEIGHT)||(testImg.cols != WIDTH))
+	{
+		Mat newtestImg;
+		resize(testImg,newtestImg,Size(WIDTH,HEIGHT));
+		testImg = newtestImg;
+	}
 	
 	int predictLabel = model -> predict(testImg);
 	
@@ -238,67 +230,75 @@ int main(int argc, char* argv[])
 		cout<<"Male"<<endl;
 	}
 	
-	/*-------------------------------------------------------------*/
-	
 	/*------------------------------------------------------------
 	
-	Detecting via camera:
+	Detection Part - 2: an image of more than one people
 	
 	--------------------------------------------------------------
 	
-	VideoCapture cap(0);
-	if(!cap.isOpened())
+	Mat testImg, testImg_gray;
+	if(!argv[2])
 	{
-		cout<<"Cannot open Camera"<<endl;
-		return 1;
+		cout << "Need a test image!" << endl;
+		exit(1);
 	}
 	
-	Mat frame;
-	cap >> frame;
+	string testFile = argv[2];
+	testImg = imread(testFile);
+	testImg_gray = imread(testFile,0);
 	
-	vector<Rect> recs;
-	Mat test(WIDTH,HEIGHT,CV_8UC1);
-	Mat gray;
-	int x,y;
+	// Need grayscale images to test
+	//cvtColor(testImg,testImg_gray,COLOR_BGR2GRAY);		// Turn into grayscale image
+	//equalizeHist(testImg_gray,testImg_gray);
+		
+	vector<Rect> faces = detectFaces(testImg_gray,1);
+	saveFaces(testImg,testImg_gray);
 	
-	while(1)
+	//namedWindow("faces");
+	Mat testArea,testArea_resized;
+
+	for(size_t i=0; i < faces.size();i++)
 	{
-		if(!cap.read(frame))
-			break;
-		
-		detection(frame,haarface,nest,2,0);
-		imshow("face",frame);
-		
-		
-		for(int i=0;i<recs.size();i++)
+		//
+		if((testImg.cols != WIDTH) || (testImg.rows != HEIGHT))
 		{
-			rectangle(frame,recs[i],Scalar(0,0,255));
-			x = recs[i].x + recs[i].width/2;
-			y = recs[i].y + recs[i].height/2;
-			
-			Mat ROI = frame(recs[i]);
-			cvtColor(ROI,gray,CV_BGR2GRAY);
-			resize(gray,test,Size(WIDTH,HEIGHT));// Must be the same as training images
-			
-			int result = model -> predict(test);
-			
-			switch(result)
-			{
-				case 0:
-					cout << "Male." << endl; break;
-				case 1:
-					cout << "Female." << endl; break;
-			}
+			Rect roi = faces[i];
+			testArea = testImg_gray(roi);
+			resize(testArea,testArea_resized,Size(WIDTH,HEIGHT));
+		}
+		else
+		{
+			Mat testArea_resized = testImg_gray;
 		}
 		
-				
-		imshow("Result",frame);	
-		if(waitKey(30)>=0)
-			break;
-	}
-	cap.release();
+		// Predict!
+		int predictLabel = model -> predict(testArea_resized);
 	
-	/*-------------------------------------------------------------*/
+		// Draw the ROI and label
+		Point pt1(faces[i].x, faces[i].y);
+		Point pt2(faces[i].x + faces[i].width, faces[i].y + faces[i].height);
+		rectangle(testImg,pt1,pt2,Scalar(0,0,255),1,8,0);
+		
+		// Show result
+		string result = format("\n\nPredicted Label = %d", predictLabel);
+		cout << result << endl;
+		cout<<"Predicted Gender is ";
+		if(predictLabel==1)
+		{
+			cout<<"Female"<<endl;
+			putText(testImg,"Female",pt1,CV_FONT_HERSHEY_TRIPLEX, 0.7f ,Scalar(0,255,0),1.5,8,0);	
+		}
+		else
+		{
+			cout<<"Male"<<endl;
+			putText(testImg,"Male",pt1,CV_FONT_HERSHEY_TRIPLEX, 0.7f ,Scalar(0,255,0),1.5,8,0);	
+		}
+		
+	}
+	imshow("faces",testImg);
+	waitKey(0);
 
+	-------------------------------------------------------------*/
+	
     return 0;
 }
